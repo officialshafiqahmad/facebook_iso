@@ -6,13 +6,15 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import com.example.facebook_iso.api_manager.constants;
 import com.example.facebook_iso.common.UIToast;
+import com.google.gson.Gson;
 
 import okhttp3.Response;
 import java.io.IOException;
 
 public class ResponseHandler {
-    public static String handleResponse(Context context, Response response, String endPoint) {
+    public static <T> T handleResponse(Context context, Response response, String endPoint, Class<T> classType) {
         String responseBody = null;
+        T responseObject = null;
 
         if (response == null) {
             Log.d("Debug123: URL: " + constants.baseUrl + endPoint + "\nstatus: ", "Response is null");
@@ -33,11 +35,11 @@ public class ResponseHandler {
                 } else if (jsonObject.has("error")){
                     UIToast.showToast(context, jsonObject.getString("error"));
                 }
-                else
-                {
+                else {
                     switch (responseCode) {
                         case 200:
                             UIToast.showToast(context, "Success");
+                            responseObject = new Gson().fromJson(responseBody, classType);
                             break;
                         case 401:
                             UIToast.showToast(context, "");
@@ -62,6 +64,6 @@ public class ResponseHandler {
             UIToast.showToast(context, "Error parsing JSON");
         }
 
-        return responseBody;
+        return responseObject;
     }
 }

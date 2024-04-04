@@ -83,30 +83,11 @@ public class Login_Page extends AppCompatActivity
             try {
                 Response response = future.get();
                 ProgressDialogManager.dismissProgressDialog();
-                String responseBodyString = ResponseHandler.handleResponse(Login_Page.this, response, constants.signIn);
-                if(response.code() == 200)
-                {
-                    if (responseBodyString != null)
-                    {
-                        String userToken = new JSONObject(responseBodyString).getString("token");
-                        String userId = new JSONObject(responseBodyString).getJSONObject("user").getString("_id");
-                        String displayName = new JSONObject(responseBodyString).getJSONObject("user").getString("displayName");
-                        String profilePicture = new JSONObject(responseBodyString).getJSONObject("user").getString("profilePic");
-                        SharedPreferencesManager.setBoolean(Login_Page.this, keys.loggedIn, true);
-                        UserClass userClass = new UserClass();
-                        userClass.setID(userId);
-                        userClass.setUsername(username);
-                        userClass.setPassword(password);
-                        userClass.setDisplayName(displayName);
-                        userClass.setProfilePic(profilePicture);
-                        User currentUser = new User();
-                        currentUser.setToken(userToken);
-                        currentUser.setUser(userClass);
-                        SharedPreferencesManager.setObject(Login_Page.this, keys.currentUser, currentUser);
-                        startActivity(new Intent(Login_Page.this, Feed_Page.class));
-                        Login_Page.this.finish();
-                    }
-                }
+                User currentUser = ResponseHandler.handleResponse(Login_Page.this, response, constants.signIn, User.class);
+                SharedPreferencesManager.setObject(Login_Page.this, keys.currentUser, currentUser);
+                SharedPreferencesManager.setBoolean(Login_Page.this, keys.loggedIn, true);
+                startActivity(new Intent(Login_Page.this, Feed_Page.class));
+                Login_Page.this.finish();
             } catch (Exception e) {
                 ProgressDialogManager.dismissProgressDialog();
                 Log.d("Debug123: ", Objects.requireNonNull(e.getMessage()));

@@ -8,6 +8,12 @@ public class User {
     private UserClass user;
     private String token;
 
+    public User(UserClass user, String token)
+    {
+        this.user = user;
+        this.token = token;
+    }
+
     public UserClass getUser() { return user; }
     public void setUser(UserClass value) { this.user = value; }
 

@@ -10,6 +10,15 @@ public class UserClass
     private String displayName;
     private String profilePic;
 
+    public UserClass(String id, String username, String password, String displayName, String profilePic)
+    {
+        this.id = id;
+        this.username = username;
+        this.password = password;
+        this.displayName = displayName;
+        this.profilePic = profilePic;
+    }
+
     public String getID()
     {
         return id;
