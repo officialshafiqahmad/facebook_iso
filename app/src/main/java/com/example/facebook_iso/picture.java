@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -16,8 +17,20 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.example.facebook_iso.api_manager.api_manager;
+import com.example.facebook_iso.api_manager.constants;
+import com.example.facebook_iso.common.ProgressDialogManager;
+import com.example.facebook_iso.common.ResponseHandler;
+
+import org.json.JSONObject;
+
 import java.io.ByteArrayOutputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Future;
+
+import okhttp3.Response;
 
 public class picture extends Activity {
 
@@ -93,11 +106,7 @@ public class picture extends Activity {
         }
         Button finish_reg = findViewById(R.id.finish_reg);
         finish_reg.setOnClickListener(v -> {
-            //add to list
-            logininfo_list.getInstance().add(current_user.getInstance().get_Current());
-            //go to feed
-            Intent i =new Intent(this, Feed_Page.class);
-            startActivity(i);
+            signUpUser(getIntent().getStringExtra("username"), getIntent().getStringExtra("password"), getIntent().getStringExtra("name"), getIntent().getStringExtra("profilePicture"));
         });
     }
     public Uri getImageUri(Context context, Bitmap bitmap) {
@@ -106,5 +115,32 @@ public class picture extends Activity {
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
         String path = MediaStore.Images.Media.insertImage(context.getContentResolver(), bitmap, "Title", null);
         return Uri.parse(path);
+    }
+
+    private void signUpUser(String username, String password, String displayName, String profilePicture)
+    {
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("username", username);
+        parameters.put("password", password);
+        parameters.put("displayName", displayName);
+        parameters.put("profilePic", profilePicture);
+        Future<Response> future = new api_manager(picture.this).post(constants.signUp, parameters);
+        ProgressDialogManager.showProgressDialog(picture.this, "Registering", "Please wait...");
+        new Thread(() -> {
+            try {
+                Response response = future.get();
+                ProgressDialogManager.dismissProgressDialog();
+                JSONObject body = ResponseHandler.handleResponse(picture.this, response, constants.signIn, JSONObject.class);
+                if(body != null)
+                {
+                    startActivity(new Intent(picture.this, Login_Page.class));
+                    picture.this.finish();
+                }
+            } catch (Exception e) {
+                ProgressDialogManager.dismissProgressDialog();
+                Log.d("Debug123: ", Objects.requireNonNull(e.getMessage()));
+                e.printStackTrace();
+            }
+        }).start();
     }
 }

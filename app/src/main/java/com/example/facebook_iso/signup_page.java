@@ -9,8 +9,23 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.facebook_iso.api_manager.api_manager;
+import com.example.facebook_iso.api_manager.constants;
+import com.example.facebook_iso.common.ProgressDialogManager;
+import com.example.facebook_iso.common.ResponseHandler;
+import com.example.facebook_iso.common.SharedPreferencesManager;
+import com.example.facebook_iso.entities.User;
+
+import org.json.JSONObject;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.Future;
+
+import okhttp3.Response;
 
 public class signup_page extends AppCompatActivity {
 
@@ -29,7 +44,6 @@ public class signup_page extends AppCompatActivity {
 
         Button btnlogin = findViewById(R.id.btnlogin);
         btnlogin.setOnClickListener(v -> {
-            Intent i =new Intent(this, picture.class);
             String first= firstName.getText().toString();
             String last= lastName.getText().toString();
             String user= username_text.getText().toString();
@@ -100,9 +114,7 @@ public class signup_page extends AppCompatActivity {
             }
 
             if (!err) {
-                loginInfo current = new loginInfo(first + " " + last, user, pass);
-                current_user.getInstance().set_current(current);
-                current.setNew(true);
+                Intent i =new Intent(this, picture.class).putExtra("username", user).putExtra("password", pass).putExtra("name", first + " " + last).putExtra("profilePicture", "");
                 startActivity(i);
             } else {
                 Toast.makeText(this, "Invalid Form", Toast.LENGTH_SHORT).show();

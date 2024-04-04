@@ -47,7 +47,7 @@ public class Feed_Page extends AppCompatActivity {
         User user =  SharedPreferencesManager.getObject(Feed_Page.this, keys.currentUser, User.class);
         UserClass currentUser = Objects.requireNonNull(user).getUser();
         user_name = "@" + currentUser.getUsername();
-        user_photo = Uri.parse(currentUser.getProfilePic());
+        user_photo = Uri.parse("android.resource://" + getPackageName() + "/" + R.drawable.facebook_photo);
         userFullName = currentUser.getDisplayName();
 
         lstPosts = findViewById(R.id.lstPosts);
