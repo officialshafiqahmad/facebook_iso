@@ -2,6 +2,8 @@ package com.example.facebook_iso.menuHandler;
 
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.recyclerview.widget.RecyclerView;
+
+import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.view.Gravity;
@@ -18,6 +20,8 @@ import com.example.facebook_iso.Login_Page;
 import com.example.facebook_iso.NewPost;
 import com.example.facebook_iso.R;
 import com.example.facebook_iso.adapters.PostsListAdapter;
+import com.example.facebook_iso.common.SharedPreferencesManager;
+
 public class MenuHandler {
 
     private final View menuView;
@@ -167,9 +171,13 @@ public class MenuHandler {
     }
 
     private void logOutOperation(View v) {
+        SharedPreferencesManager.clearAllPreferences(v.getContext());
         Intent intent = new Intent(v.getContext(), Login_Page.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         v.getContext().startActivity(intent);
+        ((Activity) v.getContext()).finish();
     }
+
 
     private void changeThemeOperation() {
         if (isNightMode) {
