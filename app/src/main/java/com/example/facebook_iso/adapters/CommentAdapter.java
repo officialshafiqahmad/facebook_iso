@@ -81,8 +81,6 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
 
         holder.userNameComment.setText(user_name);
         holder.userPhotoComment.setImageURI(user_photo);
-
-
     }
 
     @Override

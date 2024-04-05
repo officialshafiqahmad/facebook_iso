@@ -5,6 +5,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -14,6 +15,10 @@ import android.widget.ImageButton;
 import android.widget.PopupWindow;
 
 import com.example.facebook_iso.adapters.PostsListAdapter;
+import com.example.facebook_iso.api_manager.api_manager;
+import com.example.facebook_iso.api_manager.constants;
+import com.example.facebook_iso.common.ProgressDialogManager;
+import com.example.facebook_iso.common.ResponseHandler;
 import com.example.facebook_iso.common.SharedPreferencesManager;
 import com.example.facebook_iso.entities.Post;
 import com.example.facebook_iso.entities.User;
@@ -25,9 +30,16 @@ import org.json.JSONObject;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Currency;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Future;
+
+import okhttp3.Response;
 
 
 public class Feed_Page extends AppCompatActivity {
@@ -72,6 +84,61 @@ public class Feed_Page extends AppCompatActivity {
         adapter.setUserPhoto(user_photo);
     }
 
+    private String getPosts() {
+        final String[] allPosts = new String[1];
+        String username = Objects.requireNonNull(SharedPreferencesManager.getObject(Feed_Page.this, keys.currentUser, User.class)).getUser().getUsername();
+        String bearerToken = Objects.requireNonNull(SharedPreferencesManager.getObject(Feed_Page.this, keys.currentUser, User.class)).getToken();
+        String endpoint = constants.getPosts + "/" + username + "/posts";
+
+        // Debug: Print URL and bearer token before making the API call
+        Log.d("Debug123: ", "URL: " + constants.baseUrl + endpoint);
+        Log.d("Debug123: ", "Bearer Token: " + bearerToken);
+
+        Future<Response> future = new api_manager(Feed_Page.this).get(endpoint, bearerToken);
+        ProgressDialogManager.showProgressDialog(Feed_Page.this, "Getting Posts", "Please wait...");
+
+        // Debug: Print a log to indicate that the asynchronous call is being initiated
+        Log.d("Debug123: ", "Asynchronous call initiated");
+
+        // Use a lock object for synchronization
+        final Object lock = new Object();
+
+        new Thread(() -> {
+            try {
+                Response response = future.get();
+                ProgressDialogManager.dismissProgressDialog();
+                allPosts[0] = ResponseHandler.handleResponse(Feed_Page.this, response, constants.signIn, String.class);
+                // Debug: Print a log to indicate successful response handling
+                Log.d("Debug123: ", "Response successfully handled" + allPosts[0]);
+
+                // Notify the waiting thread that the response is available
+                synchronized (lock) {
+                    lock.notify();
+                }
+            } catch (Exception e) {
+                ProgressDialogManager.dismissProgressDialog();
+                // Debug: Print exception message if an error occurs during response handling
+                Log.d("Debug123: ", "Error handling response: " + Objects.requireNonNull(e.getMessage()));
+                e.printStackTrace();
+            }
+        }).start();
+
+        // Synchronize on the lock object and wait for the response
+        synchronized (lock) {
+            try {
+                lock.wait(); // This will wait until the lock is notified by the thread
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        // Debug: Print a log to indicate the method is returning
+        Log.d("Debug123: ", "Returning from getPosts method");
+        return allPosts[0];
+    }
+
+
+
     private void loadJson() {
         try {
             InputStream inputStream = getAssets().open("allPosts.json");
@@ -82,28 +149,26 @@ public class Feed_Page extends AppCompatActivity {
 
             String json;
             int max;
-            String title, author, author_photo, description, date, img;
+            String title, username, profilePic, description, date, img;
             json = new String(buffer, StandardCharsets.UTF_8);
-            JSONArray jsonArray = new JSONArray(json);
+            String allPosts = getPosts();
+            JSONArray jsonArray = new JSONArray(allPosts);
             max = jsonArray.length();
             for (int i = 0; i < max; i++) {
                 JSONObject jsonObject = jsonArray.getJSONObject(i);
-                title = jsonObject.getString("title");
-                author = "@" + jsonObject.getString("author");
-                author_photo = jsonObject.getString("author_photo");
+                username = "@" + jsonObject.getString("username");
                 description = jsonObject.getString("description");
-                date = jsonObject.getString("date");
+                title = jsonObject.getString("title");
+                date = jsonObject.getString("create_date");
                 img = jsonObject.getString("img");
+                profilePic = jsonObject.getString("profilePic");
                 Uri imageUri = Uri.parse("android.resource://" + getPackageName() + "/drawable/" + img);
-                Uri imageAuthorUri = Uri.parse("android.resource://" + getPackageName() + "/drawable/" + author_photo);
-                // Create the post with the correct image resource
-                posts.add(new Post(title, author, imageAuthorUri,description, date, imageUri, lstPosts, adapter));
+                Uri imageAuthorUri = Uri.parse("android.resource://" + getPackageName() + "/drawable/" + profilePic);
+                posts.add(new Post(title, username, imageAuthorUri,description, date, imageUri, lstPosts, adapter));
             }
         } catch (Exception e) {
             Log.e("TAG", "loadJson: error " + e);
         }
-
-
     }
 
     private void showPopupMenu(View view) {

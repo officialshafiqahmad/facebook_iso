@@ -139,23 +139,75 @@ public class api_manager {
     }
 
 
-    public String get(String endpoint) throws IOException {
-        URL url = new URL(constants.baseUrl + endpoint);
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("GET");
+    public Future<Response> get(String endpoint, String bearerToken) {
+        CompletableFuture<Response> future = new CompletableFuture<>();
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        StringBuilder response = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            response.append(line);
-        }
-        reader.close();
+        AsyncTask.execute(() -> {
+            try {
 
-        connection.disconnect();
+                Request.Builder requestBuilder = new Request.Builder()
+                        .url(constants.baseUrl + endpoint)
+                        .get()
+                        .addHeader("Accept", "application/json")
+                        .addHeader("Content-Type", "application/json");
 
-        return response.toString();
+
+                if (bearerToken != null && !bearerToken.isEmpty()) {
+                    requestBuilder.addHeader("Authorization", "Bearer " + bearerToken);
+                }
+
+                Request request = requestBuilder.build();
+                try {
+                    Response response = client.newCall(request).execute();
+                    future.complete(response);
+                } catch (IOException e) {
+                    System.out.println("Debug123: Error executing request: " + e.getMessage());
+                    e.printStackTrace();
+                    future.completeExceptionally(e);
+                }
+            } catch (Exception e) {
+                System.out.println("Debug123: Error: " + e.getMessage());
+                e.printStackTrace();
+                future.completeExceptionally(e);
+            }
+        });
+
+
+        return future;
     }
+//    public Future<String> get(String endpoint) {
+//        CompletableFuture<String> future = new CompletableFuture<>();
+//
+//        AsyncTask.execute(() -> {
+//            try {
+//                URL url = new URL(constants.baseUrl + endpoint);
+//                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+//                connection.setRequestMethod("GET");
+//
+//                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+//                StringBuilder responseBuilder = new StringBuilder();
+//                String line;
+//                while ((line = reader.readLine()) != null) {
+//                    responseBuilder.append(line);
+//                }
+//                reader.close();
+//
+//                connection.disconnect();
+//
+//                future.complete(responseBuilder.toString());
+//            } catch (IOException e) {
+//                System.out.println("Debug123: Error executing request: " + e.getMessage());
+//                e.printStackTrace();
+//                future.completeExceptionally(e);
+//            } catch (Exception e) {
+//                System.out.println("Debug123: Error: " + e.getMessage());
+//                e.printStackTrace();
+//                future.completeExceptionally(e);
+//            }
+//        });
+//
+//        return future;
+//    }
 
     public String multiPost(String endpoint, Map<String, Object> parameters, File file) throws IOException {
         URL url = new URL(constants.baseUrl + endpoint);
