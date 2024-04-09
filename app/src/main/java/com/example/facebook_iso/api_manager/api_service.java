@@ -26,7 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class api_service {
-    private static final String TAG = api_service.class.getSimpleName();
+    private static final String TAG = "Api Call";
 
     private final Context mContext;
     private final RequestQueue mRequestQueue;
@@ -55,14 +55,22 @@ public class api_service {
 
     private void makeRequest(int method, final String url, final JSONObject requestBody, final String bearerToken, final ApiCallback callback) {
         if (!CheckNetwork.isNetworkAvailable(mContext)) {
+            Log.e(TAG, "No internet connection");
             callback.onError("No internet connection");
             return;
+        }
+
+        Log.d(TAG, "Making " + methodToString(method) + " request to: " + constants.baseUrl + url);
+
+        if (requestBody != null) {
+            Log.d(TAG, "Request body: " + requestBody.toString());
         }
 
         StringRequest stringRequest = new StringRequest(method, constants.baseUrl + url,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
+                        Log.d(TAG, "Response received: " + response);
                         try {
                             Object jsonResponse = new JSONTokener(response).nextValue();
                             if (jsonResponse instanceof JSONObject) {
@@ -84,10 +92,11 @@ public class api_service {
         }) {
             @Override
             public byte[] getBody() throws AuthFailureError {
-                if (requestBody != null) {
-                    return requestBody.toString().getBytes();
+                byte[] body = super.getBody();
+                if (body != null) {
+                    Log.d(TAG, "Request body: " + new String(body));
                 }
-                return super.getBody();
+                return body;
             }
 
             @Override
@@ -108,14 +117,32 @@ public class api_service {
         mRequestQueue.add(stringRequest);
     }
 
-
+    private String methodToString(int method) {
+        switch (method) {
+            case Request.Method.GET:
+                return "GET";
+            case Request.Method.POST:
+                return "POST";
+            case Request.Method.PUT:
+                return "PUT";
+            case Request.Method.DELETE:
+                return "DELETE";
+            case Request.Method.PATCH:
+                return "PATCH";
+            default:
+                return "UNKNOWN";
+        }
+    }
 
     private void handleErrorResponse(VolleyError error, ApiCallback callback) {
         if (error instanceof NoConnectionError) {
+            Log.e(TAG, "No internet connection");
             callback.onError("No internet connection");
         } else if (error instanceof TimeoutError) {
+            Log.e(TAG, "Request timeout");
             callback.onError("Request timeout");
         } else if (error instanceof NetworkError) {
+            Log.e(TAG, "Network error");
             callback.onError("Network error");
         } else if (error.networkResponse != null) {
             int statusCode = error.networkResponse.statusCode;
@@ -127,8 +154,10 @@ public class api_service {
                     Log.e(TAG, "Error parsing error response", e);
                 }
             }
+            Log.e(TAG, "Status code: " + statusCode + ", Message: " + message);
             callback.onError("Status code: " + statusCode + ", Message: " + message);
         } else {
+            Log.e(TAG, "Unknown error");
             callback.onError("Unknown error");
         }
     }
@@ -140,5 +169,7 @@ public class api_service {
 
         void onError(String errorMessage);
     }
+
+
 }
 

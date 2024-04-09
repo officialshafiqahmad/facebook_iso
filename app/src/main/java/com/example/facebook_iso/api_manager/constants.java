@@ -8,6 +8,7 @@ public class constants
     public static final String getPosts = "/api/users";
 
     public static final String createPost = "/api/users";
+    public static final String deletePost = "/api/users";
 
 
 }

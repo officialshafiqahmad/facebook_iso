@@ -10,7 +10,14 @@ import android.widget.TextView;
 import com.example.facebook_iso.R;
 import com.example.facebook_iso.adapters.PostsListAdapter;
 import com.example.facebook_iso.EditPost;
+import com.example.facebook_iso.api_manager.api_service;
+import com.example.facebook_iso.api_manager.constants;
+import com.example.facebook_iso.common.CurrentUserManager;
+import com.example.facebook_iso.common.UIToast;
 import com.example.facebook_iso.entities.Post;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.List;
 
@@ -60,14 +67,14 @@ public class ThreeDots {
         deleteButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                deleteOperation();
+                deleteOperation(v);
             }
         });
 
         deleteText.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                deleteOperation();
+                deleteOperation(v);
             }
         });
     }
@@ -77,11 +84,27 @@ public class ThreeDots {
         EditPost editPost = new EditPost(adapter, lstPosts, post, view);
     }
 
-    private void deleteOperation() {
+    private void deleteOperation(View v) {
         popupWindow.dismiss();
-        List<Post> posts = adapter.getPosts();
-        int indexOfPost = posts.indexOf(post);
-        posts.remove(indexOfPost);
-        adapter.setPosts(posts);
+        String username = CurrentUserManager.getInstance(v.getContext()).getCurrentUser().getUser().getUsername();
+        String userToken = CurrentUserManager.getInstance(v.getContext()).getCurrentUser().getToken();
+        String postId = "";
+        new api_service(v.getContext()).delete(constants.deletePost + "/:" + username + "/posts/:" + postId, userToken, new api_service.ApiCallback() {
+            @Override
+            public void onSuccess(JSONObject response) {
+                List<Post> posts = adapter.getPosts();
+                posts.remove(post);
+                adapter.setPosts(posts);
+                UIToast.showToast(v.getContext(), "Post deleted successfully");
+            }
+
+            @Override
+            public void onSuccess(JSONArray response) {}
+
+            @Override
+            public void onError(String errorMessage) {
+                UIToast.showToast(v.getContext(), errorMessage);
+            }
+        });
     }
 }

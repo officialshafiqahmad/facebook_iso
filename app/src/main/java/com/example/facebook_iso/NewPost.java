@@ -1,7 +1,6 @@
 package com.example.facebook_iso;
 
-import androidx.recyclerview.widget.RecyclerView;
-
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.net.Uri;
 import android.view.Gravity;
@@ -10,9 +9,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-
 import android.widget.PopupWindow;
 
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.facebook_iso.adapters.PostsListAdapter;
 import com.example.facebook_iso.api_manager.api_service;
@@ -27,7 +26,6 @@ import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Objects;
 
 public class NewPost {
 
@@ -52,6 +50,7 @@ public class NewPost {
         createNewPost(view);
     }
 
+    @SuppressLint("InflateParams")
     public void createNewPost(View view) {
         view = LayoutInflater.from(view.getContext()).inflate(R.layout.newpost, null);
         PopupWindow popupWindowNewPost = new PopupWindow(view, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, true);
@@ -122,8 +121,7 @@ public class NewPost {
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        api_service service = new api_service(v.getContext());
-        service.post(constants.createPost + "/:" + username + "/posts", requestBody, userToken, new api_service.ApiCallback() {
+        new api_service(v.getContext()).post(constants.createPost + "/:" + username + "/posts", requestBody, userToken, new api_service.ApiCallback() {
             @Override
             public void onSuccess(JSONObject response) {
                 adapter.addPost(newPost);
@@ -144,7 +142,7 @@ public class NewPost {
 
     private String getDate() {
         Date currentDate = new Date();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+        @SuppressLint("SimpleDateFormat") SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
         return dateFormat.format(currentDate);
 
     }
