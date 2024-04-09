@@ -7,5 +7,7 @@ public class constants
     public static final String signUp = "/api/users";
     public static final String getPosts = "/api/users";
 
+    public static final String createPost = "/api/users";
+
 
 }

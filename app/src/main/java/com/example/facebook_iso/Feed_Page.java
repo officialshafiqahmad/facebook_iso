@@ -13,19 +13,24 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.PopupWindow;
+import android.widget.Toast;
 
 import com.example.facebook_iso.adapters.PostsListAdapter;
 import com.example.facebook_iso.api_manager.api_manager;
+import com.example.facebook_iso.api_manager.api_service;
 import com.example.facebook_iso.api_manager.constants;
+import com.example.facebook_iso.common.CurrentUserManager;
 import com.example.facebook_iso.common.ProgressDialogManager;
 import com.example.facebook_iso.common.ResponseHandler;
 import com.example.facebook_iso.common.SharedPreferencesManager;
+import com.example.facebook_iso.common.UIToast;
 import com.example.facebook_iso.entities.Post;
 import com.example.facebook_iso.entities.User;
 import com.example.facebook_iso.entities.UserClass;
 import com.example.facebook_iso.menuHandler.MenuHandler;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.InputStream;
@@ -40,6 +45,7 @@ import java.util.Objects;
 import java.util.concurrent.Future;
 
 import okhttp3.Response;
+import okhttp3.internal.Util;
 
 
 public class Feed_Page extends AppCompatActivity {
@@ -56,8 +62,7 @@ public class Feed_Page extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.feed_page);
-        User user =  SharedPreferencesManager.getObject(Feed_Page.this, keys.currentUser, User.class);
-        UserClass currentUser = Objects.requireNonNull(user).getUser();
+        UserClass currentUser = Objects.requireNonNull(CurrentUserManager.getInstance(Feed_Page.this).getCurrentUser()).getUser();
         user_name = "@" + currentUser.getUsername();
         user_photo = Uri.parse("android.resource://" + getPackageName() + "/" + R.drawable.facebook_photo);
         userFullName = currentUser.getDisplayName();
@@ -82,6 +87,7 @@ public class Feed_Page extends AppCompatActivity {
 
         adapter.setUserName(user_name);
         adapter.setUserPhoto(user_photo);
+
     }
 
     private String getPosts() {
@@ -147,25 +153,55 @@ public class Feed_Page extends AppCompatActivity {
             inputStream.read(buffer);
             inputStream.close();
 
-            String json;
-            int max;
-            String title, username, profilePic, description, date, img;
-            json = new String(buffer, StandardCharsets.UTF_8);
-            String allPosts = getPosts();
-            JSONArray jsonArray = new JSONArray(allPosts);
-            max = jsonArray.length();
-            for (int i = 0; i < max; i++) {
-                JSONObject jsonObject = jsonArray.getJSONObject(i);
-                username = "@" + jsonObject.getString("username");
-                description = jsonObject.getString("description");
-                title = jsonObject.getString("title");
-                date = jsonObject.getString("create_date");
-                img = jsonObject.getString("img");
-                profilePic = jsonObject.getString("profilePic");
-                Uri imageUri = Uri.parse("android.resource://" + getPackageName() + "/drawable/" + img);
-                Uri imageAuthorUri = Uri.parse("android.resource://" + getPackageName() + "/drawable/" + profilePic);
-                posts.add(new Post(title, username, imageAuthorUri,description, date, imageUri, lstPosts, adapter));
-            }
+            String allPosts = new String(buffer, StandardCharsets.UTF_8);
+//            String allPosts = getPosts();
+            //API CAll
+            String bearerToken = Objects.requireNonNull(SharedPreferencesManager.getObject(Feed_Page.this, keys.currentUser, User.class)).getToken();
+            String endpoint = constants.getPosts + "/" + user_name + "/posts";
+            new api_service(Feed_Page.this).get(endpoint, bearerToken, new api_service.ApiCallback()
+            {
+                @Override
+                public void onSuccess(JSONObject response)
+                {
+
+                }
+
+                @Override
+                public void onSuccess(JSONArray response)
+                {
+                    JSONArray jsonArray = null;
+                    try
+                    {
+                        String title, username, profilePic, description, date, img;
+                        int max;
+                        jsonArray = new JSONArray(response);
+                        max = jsonArray.length();
+                        for (int i = 0; i < max; i++) {
+                            JSONObject jsonObject = jsonArray.getJSONObject(i);
+                            username = "@" + jsonObject.getString("username");
+                            description = jsonObject.getString("description");
+                            title = jsonObject.getString("title");
+                            date = jsonObject.getString("create_date");
+                            img = jsonObject.getString("img");
+                            profilePic = jsonObject.getString("profilePic");
+                            Uri imageUri = Uri.parse("android.resource://" + getPackageName() + "/drawable/" + img);
+                            Uri imageAuthorUri = Uri.parse("android.resource://" + getPackageName() + "/drawable/" + profilePic);
+                            posts.add(new Post(title, username, imageAuthorUri,description, date, imageUri, lstPosts, adapter));
+                        }
+                    }
+                    catch (JSONException e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+
+                }
+
+                @Override
+                public void onError(String errorMessage)
+                {
+                    UIToast.showToast(Feed_Page.this, errorMessage);
+                }
+            });
         } catch (Exception e) {
             Log.e("TAG", "loadJson: error " + e);
         }

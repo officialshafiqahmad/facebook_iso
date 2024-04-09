@@ -16,11 +16,24 @@ import android.widget.PopupWindow;
 import android.widget.Switch;
 import android.widget.TextView;
 
+import com.example.facebook_iso.Feed_Page;
 import com.example.facebook_iso.Login_Page;
 import com.example.facebook_iso.NewPost;
 import com.example.facebook_iso.R;
 import com.example.facebook_iso.adapters.PostsListAdapter;
+import com.example.facebook_iso.api_manager.api_service;
+import com.example.facebook_iso.api_manager.constants;
+import com.example.facebook_iso.common.CurrentUserManager;
 import com.example.facebook_iso.common.SharedPreferencesManager;
+import com.example.facebook_iso.common.UIToast;
+import com.example.facebook_iso.entities.Post;
+import com.example.facebook_iso.entities.UserClass;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.Objects;
 
 public class MenuHandler {
 

@@ -15,10 +15,19 @@ import android.widget.PopupWindow;
 
 
 import com.example.facebook_iso.adapters.PostsListAdapter;
+import com.example.facebook_iso.api_manager.api_service;
+import com.example.facebook_iso.api_manager.constants;
+import com.example.facebook_iso.common.CurrentUserManager;
+import com.example.facebook_iso.common.UIToast;
 import com.example.facebook_iso.entities.Post;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Objects;
 
 public class NewPost {
 
@@ -78,7 +87,7 @@ public class NewPost {
                 String setTitle = etTitle.getText().toString();
                 String setDescription = etDescription.getText().toString();
                 if (imagePost != null){
-                    createPost(setTitle, setDescription);
+                    createPost(v, setTitle, setDescription);
                 }
                 popupWindowNewPost.dismiss();
             }
@@ -98,11 +107,39 @@ public class NewPost {
     }
 
 
-    private void createPost(String setTitle, String setDescription) {
+    private void createPost(View v, String setTitle, String setDescription) {
         String date = getDate();
         Post newPost = new Post(setTitle, user_name, user_photo, setDescription, date, imagePost, lstPosts, adapter);
-        adapter.addPost(newPost);
+        String username = CurrentUserManager.getInstance(v.getContext()).getCurrentUser().getUser().getUsername();
+        String userToken = CurrentUserManager.getInstance(v.getContext()).getCurrentUser().getToken();
+        JSONObject requestBody = new JSONObject();
+        try {
+            requestBody.put("username", username);
+            requestBody.put("description", setDescription);
+            requestBody.put("img", "profile2");
+            requestBody.put("title", setTitle);
+            requestBody.put("profilePic", "laylaflower");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        api_service service = new api_service(v.getContext());
+        service.post(constants.createPost + "/:" + username + "/posts", requestBody, userToken, new api_service.ApiCallback() {
+            @Override
+            public void onSuccess(JSONObject response) {
+                adapter.addPost(newPost);
+                UIToast.showToast(v.getContext(), "Post added successfully");
+            }
+
+            @Override
+            public void onSuccess(JSONArray response) {}
+
+            @Override
+            public void onError(String errorMessage) {
+                UIToast.showToast(v.getContext(), errorMessage);
+            }
+        });
     }
+
 
 
     private String getDate() {
