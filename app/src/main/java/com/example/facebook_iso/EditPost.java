@@ -15,7 +15,16 @@ import android.widget.PopupWindow;
 
 
 import com.example.facebook_iso.adapters.PostsListAdapter;
+import com.example.facebook_iso.api_manager.api_service;
+import com.example.facebook_iso.api_manager.constants;
+import com.example.facebook_iso.common.CurrentUserManager;
+import com.example.facebook_iso.common.ProgressDialogManager;
+import com.example.facebook_iso.common.UIToast;
 import com.example.facebook_iso.entities.Post;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.List;
 
@@ -73,7 +82,7 @@ public class EditPost {
             @Override
             public void onClick(View v) {
                 imagePost = currentPost.getInstance().getImagePost();
-                updatePost(etTitle.getText().toString(), etDescription.getText().toString());
+                updatePost(v, etTitle.getText().toString(), etDescription.getText().toString());
                 popupWindowEdit.dismiss();
             }
         });
@@ -95,21 +104,50 @@ public class EditPost {
 
 
 
-    private void updatePost(String newTitle, String newDescription) {
+    private void updatePost(View v, String newTitle, String newDescription) {
+        ProgressDialogManager.showProgressDialog(v.getContext(), "Updating Post", "Please wait...");
         List<Post> posts = adapter.getPosts();
-        int indexOfPost = posts.indexOf(post);
-        Post current = posts.get(indexOfPost);
-        if (!newTitle.equals("")){
-            current.setTitle(newTitle);
-        }
-        if (!newDescription.equals("")){
-            current.setDescription(newDescription);
-        }
-        if (imagePost != null){
-            current.setPhotoUri(imagePost);
+        Post current = posts.get(posts.indexOf(post));
+        String username = CurrentUserManager.getInstance(v.getContext()).getCurrentUser().getUser().getUsername();
+        String userToken = CurrentUserManager.getInstance(v.getContext()).getCurrentUser().getToken();
+        JSONObject requestBody = new JSONObject();
+        try {
+            requestBody.put("username", username);
+            requestBody.put("description", newDescription);
+            requestBody.put("img", "profile2");
+            requestBody.put("title", newTitle);
+            requestBody.put("profilePic", "laylaflower");
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
 
-        adapter.setPosts(posts);
+        new api_service(v.getContext()).put(constants.deletePost + "/" + username + "/posts/" + current.getId(), requestBody, userToken, new api_service.ApiCallback() {
+            @Override
+            public void onSuccess(JSONObject response) {
+                if (!newTitle.equals("")){
+                    current.setTitle(newTitle);
+                }
+                if (!newDescription.equals("")){
+                    current.setDescription(newDescription);
+                }
+                if (imagePost != null){
+                    current.setPhotoUri(imagePost);
+                }
+
+                adapter.setPosts(posts);
+                UIToast.showToast(v.getContext(), "Post updated successfully");
+                ProgressDialogManager.dismissProgressDialog();
+            }
+
+            @Override
+            public void onSuccess(JSONArray response) {}
+
+            @Override
+            public void onError(String errorMessage) {
+                UIToast.showToast(v.getContext(), errorMessage);
+                ProgressDialogManager.dismissProgressDialog();
+            }
+        });
     }
 
 

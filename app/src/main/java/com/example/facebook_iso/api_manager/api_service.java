@@ -44,6 +44,10 @@ public class api_service {
         makeRequest(Request.Method.POST, url, requestBody, bearerToken, callback);
     }
 
+    public void put(String url, JSONObject requestBody, String bearerToken, ApiCallback callback) {
+        makeRequest(Request.Method.PUT, url, requestBody, bearerToken, callback);
+    }
+
     public void patch(String url, JSONObject requestBody, String bearerToken, ApiCallback callback) {
         makeRequest(Request.Method.PATCH, url, requestBody, bearerToken, callback);
     }
