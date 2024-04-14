@@ -133,6 +133,7 @@ public class Feed_Page extends AppCompatActivity {
                             posts.clear();
                             for (int i = 0; i < max; i++) {
                                 JSONObject jsonObject = response.getJSONObject(i);
+                                String id = jsonObject.optString("_id", "");
                                 String title = jsonObject.optString("title", "");
                                 String username = "@" + jsonObject.optString("username", "");
                                 String description = jsonObject.optString("description", "");
@@ -141,7 +142,7 @@ public class Feed_Page extends AppCompatActivity {
                                 String profilePic = jsonObject.optString("profilePic", "");
                                 Uri imageUri = Uri.parse("android.resource://" + getPackageName() + "/drawable/" + img);
                                 Uri imageAuthorUri = Uri.parse("android.resource://" + getPackageName() + "/drawable/" + profilePic);
-                                posts.add(new Post(title, username, imageAuthorUri, description, date, imageUri, lstPosts, adapter));
+                                posts.add(new Post(id, title, username, imageAuthorUri, description, date, imageUri, lstPosts, adapter));
                             }
                             adapter.setPosts(posts);
                             UIToast.showToast(Feed_Page.this, "Posts refreshed");

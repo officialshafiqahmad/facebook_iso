@@ -7,12 +7,14 @@ import android.widget.ImageButton;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 
+import com.example.facebook_iso.Feed_Page;
 import com.example.facebook_iso.R;
 import com.example.facebook_iso.adapters.PostsListAdapter;
 import com.example.facebook_iso.EditPost;
 import com.example.facebook_iso.api_manager.api_service;
 import com.example.facebook_iso.api_manager.constants;
 import com.example.facebook_iso.common.CurrentUserManager;
+import com.example.facebook_iso.common.ProgressDialogManager;
 import com.example.facebook_iso.common.UIToast;
 import com.example.facebook_iso.entities.Post;
 
@@ -85,17 +87,19 @@ public class ThreeDots {
     }
 
     private void deleteOperation(View v) {
+        ProgressDialogManager.showProgressDialog(v.getContext(), "Deleting Post", "Please wait...");
         popupWindow.dismiss();
         String username = CurrentUserManager.getInstance(v.getContext()).getCurrentUser().getUser().getUsername();
         String userToken = CurrentUserManager.getInstance(v.getContext()).getCurrentUser().getToken();
-        String postId = "";
-        new api_service(v.getContext()).delete(constants.deletePost + "/:" + username + "/posts/:" + postId, userToken, new api_service.ApiCallback() {
+        String postId = post.getId();
+        new api_service(v.getContext()).delete(constants.deletePost + "/" + username + "/posts/" + postId, userToken, new api_service.ApiCallback() {
             @Override
             public void onSuccess(JSONObject response) {
                 List<Post> posts = adapter.getPosts();
                 posts.remove(post);
                 adapter.setPosts(posts);
                 UIToast.showToast(v.getContext(), "Post deleted successfully");
+                ProgressDialogManager.dismissProgressDialog();
             }
 
             @Override
@@ -104,6 +108,7 @@ public class ThreeDots {
             @Override
             public void onError(String errorMessage) {
                 UIToast.showToast(v.getContext(), errorMessage);
+                ProgressDialogManager.dismissProgressDialog();
             }
         });
     }

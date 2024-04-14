@@ -22,7 +22,7 @@ import android.view.LayoutInflater;
 public class Post {
     @PrimaryKey(autoGenerate = true)
 
-    private int id;
+    private String id;
     private String author;
     private String date;
     private String title;
@@ -40,7 +40,8 @@ public class Post {
     private CommentPost commentPost;
 
     private  PostsListAdapter adapter;
-    public Post(String title, String author, Uri author_photo, String description, String date, Uri img, RecyclerView lstPosts,  PostsListAdapter adapter) {
+    public Post(String id, String title, String author, Uri author_photo, String description, String date, Uri img, RecyclerView lstPosts,  PostsListAdapter adapter) {
+        this.id = id;
         this.author = author;
         this.date = date;
         this.title = title;
@@ -56,7 +57,7 @@ public class Post {
         this.commentPost = new CommentPost(this, adapter);
     }
 
-    public int getId() {
+    public String getId() {
         return id;
     }
 
@@ -83,7 +84,7 @@ public class Post {
         return img;
     }
 
-    public void setId(int id) {
+    public void setId(String id) {
         this.id = id;
     }
     public void setTitle(String title) {

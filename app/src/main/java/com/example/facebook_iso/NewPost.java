@@ -109,8 +109,6 @@ public class NewPost {
 
     private void createPost(View v, String setTitle, String setDescription) {
         ProgressDialogManager.showProgressDialog(v.getContext(), "Adding Post", "Please wait...");
-        String date = getDate();
-        Post newPost = new Post(setTitle, user_name, user_photo, setDescription, date, imagePost, lstPosts, adapter);
         String username = CurrentUserManager.getInstance(v.getContext()).getCurrentUser().getUser().getUsername();
         String userToken = CurrentUserManager.getInstance(v.getContext()).getCurrentUser().getToken();
         JSONObject requestBody = new JSONObject();
@@ -126,8 +124,12 @@ public class NewPost {
         new api_service(v.getContext()).post(constants.createPost + "/" + username + "/posts", requestBody, userToken, new api_service.ApiCallback() {
             @Override
             public void onSuccess(JSONObject response) {
+                String id = response.optString("insertedId", "");
+                Post newPost = new Post(id, setTitle, user_name, user_photo, setDescription, getDate(), imagePost, lstPosts, adapter);
+                newPost.setId(id);
                 adapter.addPost(newPost);
                 UIToast.showToast(v.getContext(), "Post added successfully");
+                ProgressDialogManager.dismissProgressDialog();
             }
 
             @Override
@@ -136,9 +138,9 @@ public class NewPost {
             @Override
             public void onError(String errorMessage) {
                 UIToast.showToast(v.getContext(), errorMessage);
+                ProgressDialogManager.dismissProgressDialog();
             }
         });
-        ProgressDialogManager.dismissProgressDialog();
     }
 
 
