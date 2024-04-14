@@ -3,6 +3,7 @@ package com.example.facebook_iso;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
@@ -50,6 +51,7 @@ import okhttp3.internal.Util;
 
 public class Feed_Page extends AppCompatActivity {
 
+    private SwipeRefreshLayout refreshLayout;
     private RecyclerView lstPosts;
     private PostsListAdapter adapter;
     private MenuHandler menuHandler;
@@ -68,14 +70,14 @@ public class Feed_Page extends AppCompatActivity {
         userFullName = currentUser.getDisplayName();
 
         lstPosts = findViewById(R.id.lstPosts);
+        refreshLayout = findViewById(R.id.refreshLayout);
         adapter = new PostsListAdapter(this);
         lstPosts.setAdapter(adapter);
 
         lstPosts.setLayoutManager(new LinearLayoutManager(this));
 
         posts = new ArrayList<>();
-        loadJson();
-        adapter.setPosts(posts);
+        getPosts(false);
 
         ImageButton menuButton = findViewById(R.id.menuButton);
         menuButton.setOnClickListener(new View.OnClickListener() {
@@ -85,79 +87,34 @@ public class Feed_Page extends AppCompatActivity {
             }
         });
 
+        refreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener()
+        {
+            @Override
+            public void onRefresh()
+            {
+                getPosts(true);
+            }
+        });
         adapter.setUserName(user_name);
         adapter.setUserPhoto(user_photo);
 
     }
 
-    private String getPosts() {
-        final String[] allPosts = new String[1];
-        String username = Objects.requireNonNull(SharedPreferencesManager.getObject(Feed_Page.this, keys.currentUser, User.class)).getUser().getUsername();
-        String bearerToken = Objects.requireNonNull(SharedPreferencesManager.getObject(Feed_Page.this, keys.currentUser, User.class)).getToken();
-        String endpoint = constants.getPosts + "/" + username + "/posts";
-
-        // Debug: Print URL and bearer token before making the API call
-        Log.d("Debug123: ", "URL: " + constants.baseUrl + endpoint);
-        Log.d("Debug123: ", "Bearer Token: " + bearerToken);
-
-        Future<Response> future = new api_manager(Feed_Page.this).get(endpoint, bearerToken);
-        ProgressDialogManager.showProgressDialog(Feed_Page.this, "Getting Posts", "Please wait...");
-
-        // Debug: Print a log to indicate that the asynchronous call is being initiated
-        Log.d("Debug123: ", "Asynchronous call initiated");
-
-        // Use a lock object for synchronization
-        final Object lock = new Object();
-
-        new Thread(() -> {
-            try {
-                Response response = future.get();
-                ProgressDialogManager.dismissProgressDialog();
-                allPosts[0] = ResponseHandler.handleResponse(Feed_Page.this, response, constants.signIn, String.class);
-                // Debug: Print a log to indicate successful response handling
-                Log.d("Debug123: ", "Response successfully handled" + allPosts[0]);
-
-                // Notify the waiting thread that the response is available
-                synchronized (lock) {
-                    lock.notify();
-                }
-            } catch (Exception e) {
-                ProgressDialogManager.dismissProgressDialog();
-                // Debug: Print exception message if an error occurs during response handling
-                Log.d("Debug123: ", "Error handling response: " + Objects.requireNonNull(e.getMessage()));
-                e.printStackTrace();
-            }
-        }).start();
-
-        // Synchronize on the lock object and wait for the response
-        synchronized (lock) {
-            try {
-                lock.wait(); // This will wait until the lock is notified by the thread
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        // Debug: Print a log to indicate the method is returning
-        Log.d("Debug123: ", "Returning from getPosts method");
-        return allPosts[0];
-    }
-
-
-
-    private void loadJson() {
+    private void getPosts(Boolean isRefresh) {
         try {
+            if(!isRefresh)
+            {
+                ProgressDialogManager.showProgressDialog(Feed_Page.this, "Getting Posts", "Please wait...");
+            }
             InputStream inputStream = getAssets().open("allPosts.json");
             int size = inputStream.available();
             byte[] buffer = new byte[size];
             inputStream.read(buffer);
             inputStream.close();
 
-            String allPosts = new String(buffer, StandardCharsets.UTF_8);
-//            String allPosts = getPosts();
-            //API CAll
             String bearerToken = Objects.requireNonNull(SharedPreferencesManager.getObject(Feed_Page.this, keys.currentUser, User.class)).getToken();
-            String endpoint = constants.getPosts + "/" + user_name + "/posts";
+            String userName = Objects.requireNonNull(SharedPreferencesManager.getObject(Feed_Page.this, keys.currentUser, User.class)).getUser().getUsername();
+            String endpoint = constants.getPosts + "/" + userName + "/posts";
             new api_service(Feed_Page.this).get(endpoint, bearerToken, new api_service.ApiCallback()
             {
                 @Override
@@ -167,43 +124,48 @@ public class Feed_Page extends AppCompatActivity {
                 }
 
                 @Override
-                public void onSuccess(JSONArray response)
-                {
-                    JSONArray jsonArray = null;
-                    try
-                    {
-                        String title, username, profilePic, description, date, img;
-                        int max;
-                        jsonArray = new JSONArray(response);
-                        max = jsonArray.length();
-                        for (int i = 0; i < max; i++) {
-                            JSONObject jsonObject = jsonArray.getJSONObject(i);
-                            username = "@" + jsonObject.getString("username");
-                            description = jsonObject.getString("description");
-                            title = jsonObject.getString("title");
-                            date = jsonObject.getString("create_date");
-                            img = jsonObject.getString("img");
-                            profilePic = jsonObject.getString("profilePic");
-                            Uri imageUri = Uri.parse("android.resource://" + getPackageName() + "/drawable/" + img);
-                            Uri imageAuthorUri = Uri.parse("android.resource://" + getPackageName() + "/drawable/" + profilePic);
-                            posts.add(new Post(title, username, imageAuthorUri,description, date, imageUri, lstPosts, adapter));
+                public void onSuccess(JSONArray response) {
+                    try {
+                        int max = response.length();
+                        if (max == 0) {
+                            UIToast.showToast(Feed_Page.this, "No posts available");
+                        } else {
+                            posts.clear();
+                            for (int i = 0; i < max; i++) {
+                                JSONObject jsonObject = response.getJSONObject(i);
+                                String title = jsonObject.optString("title", "");
+                                String username = "@" + jsonObject.optString("username", "");
+                                String description = jsonObject.optString("description", "");
+                                String date = jsonObject.optString("create_date", "");
+                                String img = jsonObject.optString("img", "");
+                                String profilePic = jsonObject.optString("profilePic", "");
+                                Uri imageUri = Uri.parse("android.resource://" + getPackageName() + "/drawable/" + img);
+                                Uri imageAuthorUri = Uri.parse("android.resource://" + getPackageName() + "/drawable/" + profilePic);
+                                posts.add(new Post(title, username, imageAuthorUri, description, date, imageUri, lstPosts, adapter));
+                            }
+                            adapter.setPosts(posts);
+                            UIToast.showToast(Feed_Page.this, "Posts refreshed");
                         }
+                    } catch (JSONException e) {
+                        UIToast.showToast(Feed_Page.this, e.getMessage());
                     }
-                    catch (JSONException e)
-                    {
-                        throw new RuntimeException(e);
-                    }
-
+                    ProgressDialogManager.dismissProgressDialog();
+                    refreshLayout.setRefreshing(false);
                 }
+
 
                 @Override
                 public void onError(String errorMessage)
                 {
                     UIToast.showToast(Feed_Page.this, errorMessage);
+                    ProgressDialogManager.dismissProgressDialog();
+                    refreshLayout.setRefreshing(false);
                 }
             });
         } catch (Exception e) {
-            Log.e("TAG", "loadJson: error " + e);
+            Log.e("TAG", "getPosts: error " + e);
+            ProgressDialogManager.dismissProgressDialog();
+            refreshLayout.setRefreshing(false);
         }
     }
 

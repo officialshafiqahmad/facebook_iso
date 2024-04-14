@@ -17,6 +17,7 @@ import com.example.facebook_iso.adapters.PostsListAdapter;
 import com.example.facebook_iso.api_manager.api_service;
 import com.example.facebook_iso.api_manager.constants;
 import com.example.facebook_iso.common.CurrentUserManager;
+import com.example.facebook_iso.common.ProgressDialogManager;
 import com.example.facebook_iso.common.UIToast;
 import com.example.facebook_iso.entities.Post;
 
@@ -107,6 +108,7 @@ public class NewPost {
 
 
     private void createPost(View v, String setTitle, String setDescription) {
+        ProgressDialogManager.showProgressDialog(v.getContext(), "Adding Post", "Please wait...");
         String date = getDate();
         Post newPost = new Post(setTitle, user_name, user_photo, setDescription, date, imagePost, lstPosts, adapter);
         String username = CurrentUserManager.getInstance(v.getContext()).getCurrentUser().getUser().getUsername();
@@ -121,7 +123,7 @@ public class NewPost {
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        new api_service(v.getContext()).post(constants.createPost + "/:" + username + "/posts", requestBody, userToken, new api_service.ApiCallback() {
+        new api_service(v.getContext()).post(constants.createPost + "/" + username + "/posts", requestBody, userToken, new api_service.ApiCallback() {
             @Override
             public void onSuccess(JSONObject response) {
                 adapter.addPost(newPost);
@@ -136,6 +138,7 @@ public class NewPost {
                 UIToast.showToast(v.getContext(), errorMessage);
             }
         });
+        ProgressDialogManager.dismissProgressDialog();
     }
 
 
