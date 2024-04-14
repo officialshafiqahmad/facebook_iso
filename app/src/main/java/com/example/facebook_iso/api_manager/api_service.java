@@ -62,10 +62,6 @@ public class api_service {
 
         Log.d(TAG, "Making " + methodToString(method) + " request to: " + constants.baseUrl + url);
 
-        if (requestBody != null) {
-            Log.d(TAG, "Request body: " + requestBody.toString());
-        }
-
         StringRequest stringRequest = new StringRequest(method, constants.baseUrl + url,
                 new Response.Listener<String>() {
                     @Override
@@ -92,11 +88,11 @@ public class api_service {
         }) {
             @Override
             public byte[] getBody() throws AuthFailureError {
-                byte[] body = super.getBody();
-                if (body != null) {
-                    Log.d(TAG, "Request body: " + new String(body));
+                if (requestBody != null) {
+                    Log.d(TAG, "Request body: " + requestBody);
+                    return requestBody.toString().getBytes();
                 }
-                return body;
+                return super.getBody();
             }
 
             @Override
@@ -108,6 +104,7 @@ public class api_service {
             public Map<String, String> getHeaders() throws AuthFailureError {
                 Map<String, String> headers = new HashMap<>();
                 if (bearerToken != null && !bearerToken.isEmpty()) {
+                    Log.d(TAG, "Authorization: " + bearerToken);
                     headers.put("Authorization", "Bearer " + bearerToken);
                 }
                 return headers;
